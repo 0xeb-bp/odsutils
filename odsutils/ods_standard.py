@@ -28,14 +28,20 @@ class Standard_Version_B:
         'trk_rate_ra_deg_per_sec': float,
         'freq_lower_hz': float,
         'freq_upper_hz': float,
+        'freq_lower_actual_hz': float,
+        'freq_upper_actual_hz': float,
         'version': str,
         'dish_diameter_m': float,
         'subarray': int,
     }
 
+    # Fields that need not be present/populated for a record to be valid.
+    optional_fields = ['freq_lower_actual_hz', 'freq_upper_actual_hz']
+
     sort_order_time = ['src_start_utc', 'src_end_utc', 'site_id', 'site_lat_deg', 'site_lon_deg', 'site_el_m',
                        'src_id', 'corr_integ_time_sec', 'src_ra_j2000_deg', 'src_dec_j2000_deg', 'slew_sec',
                        'trk_rate_dec_deg_per_sec', 'trk_rate_ra_deg_per_sec', 'freq_lower_hz', 'freq_upper_hz',
+                       'freq_lower_actual_hz', 'freq_upper_actual_hz',
                        'version', 'dish_diameter_m', 'subarray']
 
 
@@ -148,6 +154,7 @@ class Standard:
         else:
             raise ValueError(f"{self.version} is not an available standard.")
         self.ods_fields = self.standard.fields
+        self.optional_fields = getattr(self.standard, 'optional_fields', [])
         self.sort_order_time = self.standard.sort_order_time
         self.data_key = self.standard.meta_fields['data_key']
         self.time_fields = self.standard.meta_fields['time_fields']
@@ -181,14 +188,14 @@ class Standard:
             if key not in self.ods_fields:
                 msg.append(f"{key} not an ods_field")
                 is_valid = False
-            elif rec[key] is None:
+            elif rec[key] is None and key not in self.optional_fields:
                 msg.append(f"Value for {key} is None")
                 is_valid = False
         for key in self.ods_fields:  # Check that all keys are provided for a rec and type is correct
-            if key not in rec:
+            if key not in rec and key not in self.optional_fields:
                 msg.append(f"Missing ODS field {key}")
                 is_valid = False
-            elif rec[key] is not None:
+            elif rec.get(key) is not None:
                 try:
                     _ = self.ods_fields[key](rec[key])
                 except ValueError:
