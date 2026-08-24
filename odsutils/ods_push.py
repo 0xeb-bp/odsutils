@@ -58,11 +58,13 @@ def push_ods(
         Source name, also used in the per-project filename.
     ra_deg, dec_deg : float
         J2000 position in degrees.
-    freq_hz : list of [lower_hz, upper_hz] pairs
-        Bands actually being received, one pair per tuning, e.g.
-        [[1000e6, 1672e6], [4200e6, 4872e6]] for two tunings and
-        [[1000e6, 1672e6]] for one. Not a flat list of edges. Pass [] to
-        publish without the field, e.g. when the tunings cannot be read.
+    freq_hz : list of dicts
+        Bands actually being received, one per tuning, stored in the record
+        as given, e.g.
+        [{"freq_lower_hz": 1000e6, "freq_upper_hz": 1672e6},
+         {"freq_lower_hz": 4200e6, "freq_upper_hz": 4872e6}].
+        Pass [] to publish without the field, e.g. when the tunings cannot
+        be read.
     project : str
         Short project tag keeping this project's file distinct from others'.
     length_hours : float
@@ -93,14 +95,18 @@ def push_ods(
         logger.error(f"ODS push failed: ra/dec not numeric: {ra_deg!r}, {dec_deg!r}")
         return False
     try:
-        bands = [[float(lo), float(hi)] for lo, hi in freq_hz]
-    except (TypeError, ValueError):
-        logger.error("ODS push failed: freq_hz must be one [lower_hz, upper_hz] "
-                     f"pair per tuning, e.g. [[1000e6, 1672e6], [4200e6, 4872e6]]; "
+        bands = [
+            {"freq_lower_hz": float(b["freq_lower_hz"]),
+             "freq_upper_hz": float(b["freq_upper_hz"])}
+            for b in freq_hz
+        ]
+    except (KeyError, TypeError, ValueError):
+        logger.error("ODS push failed: freq_hz must be one dict per tuning, e.g. "
+                     '[{"freq_lower_hz": 1000e6, "freq_upper_hz": 1672e6}]; '
                      f"got {freq_hz!r}")
         return False
-    if any(hi <= lo for lo, hi in bands):
-        logger.error(f"ODS push failed: freq_hz has upper <= lower: {bands!r}")
+    if any(b["freq_upper_hz"] <= b["freq_lower_hz"] for b in bands):
+        logger.error(f"ODS push failed: freq_upper_hz <= freq_lower_hz: {bands!r}")
         return False
 
     if start is None:

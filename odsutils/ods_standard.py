@@ -28,8 +28,8 @@ class Standard_Version_B:
         'trk_rate_ra_deg_per_sec': float,
         'freq_lower_hz': float,
         'freq_upper_hz': float,
-        # Bands actually being received, as [[lower_hz, upper_hz], ...] with one
-        # pair per simultaneous tuning.
+        # Bands actually being received, one per simultaneous tuning, as
+        # [{"freq_lower_hz": ..., "freq_upper_hz": ...}, ...].
         'freq_actual_hz': list,
         'version': str,
         'dish_diameter_m': float,
